@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ */
+
+include "lib/AO.php";
+
+use AO\AbstractsOverride as AbstractsOverride;
+
+/**
+ * Implements hook_form_alter().
+ */
+function easyopac_abstracts_override_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'ding_ting_frontend_local_config_admin_settings') {
+    $form['ting_object']['easyopac_abstracts_override_show_all_abstracts'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Show all abstracts on Ting Object'),
+      '#descrition' => t('Usually ting object return first matched "abstract" value. By checking this option all occurrences will be returned for render.'),
+      '#default_value' => variable_get('easyopac_abstracts_override_show_all_abstracts', NULL),
+    ];
+  }
+}
+
+/**
+ * Implements hook_entity_prepare_view().
+ *
+ * @throws \ReflectionException
+ */
+function easyopac_abstracts_override_entity_prepare_view($entities, $type, $langcode) {
+  if (empty(variable_get('easyopac_abstracts_override_show_all_abstracts', NULL))) {
+    return;
+  }
+
+  $items = [];
+
+  foreach ($entities as $entity) {
+    if ($entity instanceof TingCollection) {
+      $items = $entity->getEntities();
+    }
+    else {
+      if ($entity instanceof TingEntity) {
+        $items[] = $entity;
+      }
+    }
+
+    foreach ($items as $item) {
+      $call_class = new AbstractsOverride($item);
+      $reflector = new ReflectionClass($call_class);
+      $properties = $reflector->getProperties();
+
+      foreach ($properties as $property) {
+        if ($property->getName() == 'abstract') {
+          $call_class->{"getAbstract"}();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function easyopac_abstracts_override_preprocess_field(&$variables) {
+  if ($variables['element']['#formatter'] == 'ting_abstract_default') {
+    if (empty(variable_get('easyopac_abstracts_override_show_all_abstracts', NULL))) {
+      return;
+    }
+
+    $entity = $variables['element']['#object'];
+
+    if (isset($entity->abstract)) {
+      $markup = implode('<br><br>', $entity->abstract);
+      $variables['items'][0]['#markup'] = $markup;
+    }
+  }
+}

@@ -1,0 +1,5 @@
+name = easyOPAC Abstracts Override
+description = Overrides ting object details abstract field.
+package = Ding!
+core = 7.x
+configure = admin/config/ting/settings/local_config
