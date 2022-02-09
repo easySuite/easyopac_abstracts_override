@@ -16,8 +16,20 @@ function easyopac_abstracts_override_form_alter(&$form, &$form_state, $form_id) 
     $form['ting_object']['easyopac_abstracts_override_show_all_abstracts'] = [
       '#type' => 'checkbox',
       '#title' => t('Show all abstracts on Ting Object'),
-      '#descrition' => t('Usually ting object return first matched "abstract" value. By checking this option all occurrences will be returned for render.'),
+      '#description' => t('Usually ting object return first matched "abstract" value. By checking this option all occurrences will be returned for render.'),
       '#default_value' => variable_get('easyopac_abstracts_override_show_all_abstracts', NULL),
+    ];
+
+    $form['ting_object']['easyopac_abstracts_override_show_custom_abstracts'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Show only last note'),
+      '#description' => t('Show only the last note from MARC field 504.'),
+      '#default_value' => variable_get('easyopac_abstracts_override_show_custom_abstracts', NULL),
+      '#states' => [
+        'visible' => [
+          ':input[name="easyopac_abstracts_override_show_all_abstracts"]' => array('checked' => TRUE),
+        ]
+      ]
     ];
   }
 }
@@ -70,7 +82,12 @@ function easyopac_abstracts_override_preprocess_field(&$variables) {
     $entity = $variables['element']['#object'];
 
     if (isset($entity->abstract)) {
-      $markup = implode('<br><br>', $entity->abstract);
+      if (empty(variable_get('easyopac_abstracts_override_show_custom_abstracts', NULL))) {
+        $markup = implode('<br><br>', $entity->abstract);
+      }
+      else {
+        $markup = end($entity->abstract);
+      }
       $variables['items'][0]['#markup'] = $markup;
     }
   }
